@@ -1,0 +1,20 @@
+﻿@page "/counter"
+
+@namespace BlazorWEBAppTestingPhilip
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    public int currentCount { get; private set; } = 0; // Make it public if needed
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}
