@@ -94,3 +94,4 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+// Just to reupload to make sure all files is there remotely
