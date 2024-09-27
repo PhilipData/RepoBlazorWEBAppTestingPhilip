@@ -1,9 +1,12 @@
+using BlazorWEBAppTestingPhilip.Codes;
 using BlazorWEBAppTestingPhilip.Components;
 using BlazorWEBAppTestingPhilip.Components.Account;
 using BlazorWEBAppTestingPhilip.Data;
+using BlazorWEBAppTestingPhilip.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,9 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+// This is for the Hashing class fx the MD5
+//builder.Services.AddSingleton<HashingHandler>();
+
 
 builder.Services.AddAuthentication(options =>
     {
@@ -25,7 +31,13 @@ builder.Services.AddAuthentication(options =>
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlite(connectionString));
+
+var todoConnection = builder.Configuration.GetConnectionString("Todo") ?? throw new InvalidOperationException("Connection string 'TodoDB' not found.");
+builder.Services.AddDbContext<TodoContext>(options =>
+    options.UseSqlite(todoConnection));
+
+
 
 //var MockConnection = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 //builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -53,6 +65,20 @@ builder.Services.AddAuthorization(options =>
 });
 });
 
+
+builder.WebHost.UseKestrel((context, serverOptions) => {
+    serverOptions.Configure(context.Configuration.GetSection("Kestrel"))
+    .Endpoint("HTTPS", listenOptions => { listenOptions.HttpsOptions.SslProtocols = SslProtocols.Tls12; });
+});
+string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+userFolder = Path.Combine(userFolder, ".aspnet");
+userFolder = Path.Combine(userFolder, "https");
+// Læg mærke til jeg brugte pxf og ikke pfx som men har ikke givet mig fejl men vil selvfølgelig normal gå med pfx
+userFolder = Path.Combine(userFolder, "phil.pxf");
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Path").Value = userFolder;
+
+string kestrelPassword = builder.Configuration.GetValue<string>("KestrelPassword");
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Password").Value = kestrelPassword;
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -94,4 +120,3 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
-// Just to reupload to make sure all files is there remotely
